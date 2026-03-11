@@ -376,6 +376,59 @@ def summary_row_sort_key(row: dict) -> tuple[int, dt.date, str]:
     )
 
 
+def normalize_level_side(kind: str) -> str:
+    raw = (kind or "").strip().lower()
+    if raw in {"support", "watch"}:
+        return "支撑"
+    if raw == "resistance":
+        return "阻力"
+    if raw == "stop":
+        return "止损"
+    return "关键位"
+
+
+def format_configured_nearest_level(inst: dict, current_price: float | None) -> str:
+    levels = inst.get("levels", []) or []
+    if not levels:
+        return "-"
+
+    grouped: dict[tuple[str, str], list[float]] = {}
+    for lv in levels:
+        try:
+            value = float(lv.get("value"))
+        except Exception:
+            continue
+        kind = (lv.get("kind") or "").strip().lower() or "unknown"
+        side = normalize_level_side(str(lv.get("kind", "")))
+        grouped.setdefault((side, kind), []).append(value)
+
+    if not grouped:
+        return "-"
+
+    candidates: list[tuple[float, str]] = []
+    for (side, _kind), values in grouped.items():
+        uniq = sorted(set(values))
+        if not uniq:
+            continue
+        low, high = uniq[0], uniq[-1]
+        if current_price is None:
+            distance = 0.0
+        elif low <= current_price <= high:
+            distance = 0.0
+        else:
+            distance = min(abs(current_price - low), abs(current_price - high))
+        if len(uniq) >= 2:
+            label = f"{side} {low:g}-{high:g}"
+        else:
+            label = f"{side} {low:g}"
+        candidates.append((distance, label))
+
+    if not candidates:
+        return "-"
+    candidates.sort(key=lambda item: (item[0], item[1]))
+    return candidates[0][1]
+
+
 def analyze_source_coverage(md_text: str, sections: list[dict]) -> list[dict]:
     # Extract explicit symbol mentions and short Chinese topic words from source,
     # then compare with configured instruments.
@@ -1368,7 +1421,13 @@ def _extract_vertex_text(data: dict) -> str:
     return "\n".join([t for t in texts if t]).strip()
 
 
-def vertex_generate_text(cfg: dict, prompt: str, max_output_tokens: int = 4096, temperature: float = 0.1) -> str:
+def vertex_generate_text(
+    cfg: dict,
+    prompt: str,
+    max_output_tokens: int = 4096,
+    temperature: float = 0.1,
+    thinking_budget: int | None = None,
+) -> str:
     creds = _get_vertex_creds(cfg)
     url = (
         "https://aiplatform.googleapis.com/v1/"
@@ -1378,8 +1437,11 @@ def vertex_generate_text(cfg: dict, prompt: str, max_output_tokens: int = 4096, 
         "temperature": temperature,
         "maxOutputTokens": max_output_tokens,
     }
-    if LLM_THINKING_BUDGET > 0:
-        generation_config["thinkingConfig"] = {"thinkingBudget": LLM_THINKING_BUDGET}
+    if thinking_budget is None:
+        if LLM_THINKING_BUDGET > 0:
+            generation_config["thinkingConfig"] = {"thinkingBudget": LLM_THINKING_BUDGET}
+    else:
+        generation_config["thinkingConfig"] = {"thinkingBudget": max(0, int(thinking_budget))}
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": generation_config,
@@ -1542,13 +1604,16 @@ def summarize_instrument_with_llm(
     display_name: str,
     current_price: float | None,
     rows: list[dict],
+    inst: dict | None = None,
 ) -> dict:
     """Use LLM to summarize action, key level, and date from source text for an instrument."""
+    latest_date = rows[0]["date"] if rows else "-"
+    configured_nearest = format_configured_nearest_level(inst or {}, current_price)
     fallback = {
         "action": "见正文",
         "core_summary": "见正文",
-        "nearest_level": "-",
-        "analysis_date": rows[0]["date"] if rows else "-",
+        "nearest_level": configured_nearest,
+        "analysis_date": latest_date,
     }
     if not vertex_cfg or not rows:
         return fallback
@@ -1586,7 +1651,13 @@ def summarize_instrument_with_llm(
     )
 
     try:
-        raw = vertex_generate_text(vertex_cfg, prompt, max_output_tokens=512, temperature=0.0)
+        raw = vertex_generate_text(
+            vertex_cfg,
+            prompt,
+            max_output_tokens=1024,
+            temperature=0.0,
+            thinking_budget=0,
+        )
         parsed = json.loads(extract_json_object_text(raw))
         if not isinstance(parsed, dict):
             return fallback
@@ -1594,11 +1665,12 @@ def summarize_instrument_with_llm(
         action = compact_spaces(str(parsed.get("action", ""))).strip()
         nearest = compact_spaces(str(parsed.get("nearest_level", ""))).strip()
         adate = compact_spaces(str(parsed.get("analysis_date", ""))).strip()
+        final_nearest = configured_nearest if configured_nearest != "-" else (nearest or fallback["nearest_level"])
         return {
             "core_summary": core or fallback["core_summary"],
             "action": action or fallback["action"],
-            "nearest_level": nearest or fallback["nearest_level"],
-            "analysis_date": adate or fallback["analysis_date"],
+            "nearest_level": final_nearest,
+            "analysis_date": latest_date,
         }
     except Exception as exc:
         print(f"[WARN] instrument summary LLM failed for {display_name}: {exc}", flush=True)
@@ -1686,6 +1758,7 @@ def validate_judgement_with_llm(vertex_cfg: dict, payload: dict) -> dict:
             build_validation_prompt(payload),
             max_output_tokens=1024,
             temperature=0.0,
+            thinking_budget=0,
         )
         parsed = json.loads(extract_json_object_text(raw))
         if not isinstance(parsed, dict):
@@ -1840,6 +1913,7 @@ def refine_sections_with_llm(vertex_cfg: dict, token: str, rows: list[dict]) -> 
             build_refine_prompt(token, batch_rows),
             max_output_tokens=4096,
             temperature=0.1,
+            thinking_budget=0,
         )
         parsed = json.loads(extract_json_text(raw))
         if not isinstance(parsed, list) or len(parsed) != len(batch_rows):
@@ -2280,7 +2354,7 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
             _summary_rows_for_llm = rows_cache[inst["token"]]
             print(f"[LLM-ACTION] {display_name} ...", flush=True)
             inst_summary = summarize_instrument_with_llm(
-                vertex_cfg, display_name, current, _summary_rows_for_llm
+                vertex_cfg, display_name, current, _summary_rows_for_llm, inst=inst
             )
             action_text = inst_summary["action"]
             nearest_text = inst_summary["nearest_level"]
