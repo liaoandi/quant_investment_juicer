@@ -369,7 +369,11 @@ def _extract_iso_date(text: str) -> dt.date | None:
 def summary_row_sort_key(row: dict) -> tuple[int, dt.date, str]:
     d = _extract_iso_date(str(row.get("date", "")))
     # valid date first, then newer date first, then stable by name
-    return (1 if d else 0, d or dt.date.min, compact_spaces(str(row.get("name", ""))))
+    return (
+        0 if d else 1,
+        -(d.toordinal()) if d else 0,
+        compact_spaces(str(row.get("name", ""))),
+    )
 
 
 def analyze_source_coverage(md_text: str, sections: list[dict]) -> list[dict]:
@@ -2719,13 +2723,7 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
     cat_order = {c: i for i, c in enumerate(SUMMARY_CATEGORY_ORDER)}
     all_rows = sorted(
         summary_rows,
-        key=lambda r: (cat_order.get(r.get("category", ""), 99), summary_row_sort_key(r)),
-        reverse=False,
-    )
-    # Within same category, newest first
-    all_rows = sorted(
-        all_rows,
-        key=lambda r: cat_order.get(r.get("category", ""), 99),
+        key=lambda r: (cat_order.get(r.get("category", ""), 99), *summary_row_sort_key(r)),
     )
 
     summary_block.append("| 分类 | 品种 | 当前点位 | 日期 | 最近关键位 | 对应操作 |")
