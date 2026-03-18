@@ -5,8 +5,8 @@ Covers: options_oi, put_call_wall (10 charts)
 Data source: NASDAQ (free, no auth, complete OI)
 
 Usage:
-    python scripts/chart_templates/options_oi.py --ticker GLD --expiry 2026-03-20
-    python scripts/chart_templates/options_oi.py --ticker KWEB --side both
+    python scripts/analysis/chart_templates/options_oi.py --ticker GLD --expiry 2026-03-20
+    python scripts/analysis/chart_templates/options_oi.py --ticker KWEB --side both
 """
 
 import argparse

@@ -5,8 +5,8 @@ Covers: gamma_exposure (3 charts)
 Data source: NASDAQ (free, complete OI) + yfinance (current price)
 
 Usage:
-    python scripts/chart_templates/gamma_exposure.py --ticker GLD --expiry 2026-03-20
-    python scripts/chart_templates/gamma_exposure.py --ticker KWEB
+    python scripts/analysis/chart_templates/gamma_exposure.py --ticker GLD --expiry 2026-03-20
+    python scripts/analysis/chart_templates/gamma_exposure.py --ticker KWEB
 """
 
 import argparse

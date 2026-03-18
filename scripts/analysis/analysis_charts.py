@@ -6,8 +6,8 @@ Analyze images from Weibo posts:
 3. Run the generated code with latest data to produce updated conclusions
 
 Usage:
-    python scripts/analyze_charts.py --input processed/quant_juicer_weibo_latest.md
-    python scripts/analyze_charts.py --image path/to/single_chart.png
+    python scripts/analysis/analysis_charts.py --input processed/quant_juicer_weibo_latest.md
+    python scripts/analysis/analysis_charts.py --image path/to/single_chart.png
 """
 
 import argparse
@@ -67,6 +67,8 @@ def _get_vertex_creds():
 
 def gemini_vision(prompt: str, image_path: str, max_tokens: int = 4096, temperature: float = 0.1) -> str:
     """Call Gemini with an image + text prompt."""
+    if not SA_KEY_PATH.exists():
+        raise RuntimeError(f"SA_KEY_PATH not found: {SA_KEY_PATH}")
     creds = _get_vertex_creds()
     project = _detect_project(str(SA_KEY_PATH))
     url = (
@@ -227,9 +229,9 @@ def run_generated_code(code: str, output_dir: Path, chart_name: str) -> dict:
     code_path = output_dir / f"{chart_name}.py"
     chart_path = output_dir / f"{chart_name}.png"
 
-    # Inject output path into code
-    code = code.replace("output.png", str(chart_path))
-    code = code.replace("chart.png", str(chart_path))
+    # Inject output path into code — only replace quoted filenames to avoid partial matches
+    code = re.sub(r"""['"]output\.png['"]""", f'"{chart_path}"', code)
+    code = re.sub(r"""['"]chart\.png['"]""", f'"{chart_path}"', code)
     # Add savefig if not present
     if "savefig" not in code and "plt.show" in code:
         code = code.replace("plt.show()", f'plt.savefig("{chart_path}", dpi=150, bbox_inches="tight")\nplt.show()')

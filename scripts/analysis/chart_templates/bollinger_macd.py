@@ -4,8 +4,8 @@ Template E: Bollinger Bands + MACD
 Covers: bollinger_bands (4 charts)
 
 Usage:
-    python scripts/chart_templates/bollinger_macd.py --ticker GLD --period 1y
-    python scripts/chart_templates/bollinger_macd.py --ticker Au99.99 --source eastmoney --secid 113.Au99.99 --period 1y
+    python scripts/analysis/chart_templates/bollinger_macd.py --ticker GLD --period 1y
+    python scripts/analysis/chart_templates/bollinger_macd.py --ticker Au99.99 --source eastmoney --secid 113.Au99.99 --period 1y
 """
 
 import argparse

@@ -4,9 +4,9 @@ Template A: Candlestick + AVWAP + Moving Averages + Support/Resistance
 Covers: candlestick, moving_averages, support_resistance (21 charts)
 
 Usage:
-    python scripts/chart_templates/candlestick_avwap.py --ticker GLD --period 6mo
-    python scripts/chart_templates/candlestick_avwap.py --ticker 000932.SS --source eastmoney --secid 1.000932
-    python scripts/chart_templates/candlestick_avwap.py --ticker GLD --avwap-date 2025-11-04 --ma 20 50 --support 440 --resistance 475
+    python scripts/analysis/chart_templates/candlestick_avwap.py --ticker GLD --period 6mo
+    python scripts/analysis/chart_templates/candlestick_avwap.py --ticker 000932.SS --source eastmoney --secid 1.000932
+    python scripts/analysis/chart_templates/candlestick_avwap.py --ticker GLD --avwap-date 2025-11-04 --ma 20 50 --support 440 --resistance 475
 """
 
 import argparse

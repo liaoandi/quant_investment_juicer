@@ -78,6 +78,7 @@ def step_fetch_weibo() -> dict:
         "--cookie", cookie,
         "--since", _get_last_weibo_date(),
         "--pages", "3",
+        "--append",
     ]
     result = run_cmd(cmd, timeout=180)
 
@@ -276,7 +277,8 @@ def build_summary_md(weibo_result: dict, alerts: list[dict], charts_result: dict
             # List chart files
             from pathlib import Path as _P
             for png in sorted(_P(chart_dir).glob("*.png")):
-                lines.append(f"![{png.stem}]({png})")
+                rel = os.path.relpath(png, OUTPUT_DIR)
+                lines.append(f"![{png.stem}]({rel})")
                 lines.append("")
     lines.append("")
 

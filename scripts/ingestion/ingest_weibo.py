@@ -5,16 +5,16 @@ build_multi_asset_report.py's parse_sections() format.
 
 Usage:
     # Fetch latest 2 pages (default), auto Cookie via Playwright
-    python scripts/fetch_weibo.py
+    python scripts/ingestion/ingest_weibo.py
 
     # Fetch 5 pages, append to existing file
-    python scripts/fetch_weibo.py --pages 5 --append
+    python scripts/ingestion/ingest_weibo.py --pages 5 --append
 
     # Use manual cookie (from browser devtools)
-    python scripts/fetch_weibo.py --cookie "SUB=xxx; SUBP=yyy"
+    python scripts/ingestion/ingest_weibo.py --cookie "SUB=xxx; SUBP=yyy"
 
     # First-time login: opens browser for QR code scan, saves session
-    python scripts/fetch_weibo.py --login
+    python scripts/ingestion/ingest_weibo.py --login
 
 Output: processed/quant_juicer_weibo_latest.md  (+ images in _assets/)
 """
@@ -416,8 +416,8 @@ def main():
                 print(f"[info] Reached last fetched post ({last_id}), stopping")
                 stop = True
                 break
-            # Stop if post date is on or before --since cutoff
-            if since_date and p.created_at and p.created_at.replace(tzinfo=None) <= since_date:
+            # Stop if post date is before --since cutoff (posts on cutoff date are included)
+            if since_date and p.created_at and p.created_at.replace(tzinfo=None) < since_date:
                 print(f"[info] Reached cutoff date {args.since} (post: {format_date(p.created_at)}), stopping")
                 stop = True
                 break

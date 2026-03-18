@@ -4,9 +4,9 @@ Template C: Exponential Curve Fitting + sigma bands
 Covers: exponential_fit, price_trend (13 charts)
 
 Usage:
-    python scripts/chart_templates/exponential_fit.py --ticker ^NDX --period 20y
-    python scripts/chart_templates/exponential_fit.py --ticker ^GSPC --period 20y
-    python scripts/chart_templates/exponential_fit.py --ticker 512890.SS --period 5y --source eastmoney --secid 1.512890
+    python scripts/analysis/chart_templates/exponential_fit.py --ticker ^NDX --period 20y
+    python scripts/analysis/chart_templates/exponential_fit.py --ticker ^GSPC --period 20y
+    python scripts/analysis/chart_templates/exponential_fit.py --ticker 512890.SS --period 5y --source eastmoney --secid 1.512890
 """
 
 import argparse
@@ -97,7 +97,7 @@ def plot(df, ticker, output=None):
     ax.fill_between(dates, lower_2s, upper_2s, color="#d4a574", alpha=0.05)
 
     ax.set_title(f"Exponential Curve Fitting for {ticker}", fontsize=14)
-    ax.set_xlabel("Days Since Start")
+    ax.set_xlabel("Date")
     ax.set_ylabel("Price")
     ax.legend(loc="upper left", fontsize=9)
     ax.grid(True, alpha=0.3)
