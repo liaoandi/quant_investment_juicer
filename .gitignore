@@ -4,3 +4,9 @@ __pycache__/
 .env
 *key*.json
 price_cache/
+.venv/
+.weibo_cookie_storage/
+.weibo_fetch_state.json
+.archive/
+output/pipeline/
+output/chart_analysis/

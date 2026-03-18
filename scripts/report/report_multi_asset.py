@@ -29,7 +29,7 @@ def _path_from_env(var_name: str, default: Path) -> Path:
     return Path(raw).expanduser()
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SA_KEY_PATH = _path_from_env("SA_KEY_PATH", Path.home() / "Desktop/liaoandi-vertex-ai-key.json")
 ENV_PATH = _path_from_env("ENV_PATH", PROJECT_ROOT / ".env")
 DEFAULT_MODEL = "gemini-3.1-pro-preview"

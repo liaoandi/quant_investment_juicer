@@ -28,30 +28,22 @@
 ### 流程概览
 
 ```
-飞书导出 DOCX
-      |
-      v
- docx_to_md.py          # DOCX -> Markdown + 图片提取
-      |
-      v
- Markdown 源文件
-      |
-      v
- build_multi_asset_report.py
-      |
-      +---> 文本解析 & 投资品种分类
-      |         |
-      |         v
-      +---> LLM 提取核心观点 / 关键点位（Gemini 3.1 Pro, Vertex AI）
-      |         |
-      |         v
-      +---> 获取历史行情数据（Eastmoney API）
-      |         |
-      |         v
-      +---> 生成技术图表（K线 + 支撑/阻力/期权墙标注）
-      |         |
-      |         v
-      +---> 输出结构化 Markdown 报告
+ 数据采集                     图表逆向                    自动化
+ ─────────                   ─────────                  ─────────
+ fetch_weibo.py              analyze_charts.py          run_pipeline.py
+   微博 API 抓取图文             图片分类                   OpenClaw cron 触发
+   增量更新（--since）           (技术图表/截图/新闻)        ↓
+   回复帖归入评论区              ↓                        1. 抓微博新帖
+   LLM 提取品种 topic           逆向代码生成               2. 拉最新行情
+   ↓                           ↓                        3. 跑图表模板
+ Markdown 源文件               chart_templates/           4. 价格预警
+   ↓                             A. K线+均线+AVWAP        5. 输出 MD 报告
+ build_multi_asset_report.py     B. 期权 OI 分布           6. 飞书通知
+   文本解析 & 品种分类            C. 指数拟合+σ通道
+   LLM 提取观点/点位             D. Gamma Exposure
+   行情数据（Eastmoney/Yahoo）   E. 布林带+MACD
+   技术图表生成
+   输出结构化报告
 ```
 
 ### 产出示例
@@ -98,21 +90,48 @@
 
 ### 使用方法
 
-#### 1. DOCX 转 Markdown
+#### 1. 微博增量抓取
 
 ```bash
-python scripts/docx_to_md.py processed/quant_juicer_weibo.docx \
+python scripts/ingestion/ingest_weibo.py \
+    --cookie "SUB=xxx; SUBP=yyy" \
+    --since 2026-03-06 --pages 3
+```
+
+#### 2. 飞书 DOCX 转 Markdown（历史数据导入）
+
+```bash
+python scripts/ingestion/ingest_docx_to_md.py processed/quant_juicer_weibo.docx \
     -o processed/quant_juicer_weibo.md \
     --image-dir processed/quant_juicer_weibo_assets
 ```
 
-#### 2. 生成多资产分析报告
+#### 3. 生成多资产分析报告
 
 ```bash
-python scripts/build_multi_asset_report.py \
+python scripts/report/report_multi_asset.py \
     --input processed/quant_juicer_weibo.md \
     --output output/multi_asset_analysis_2026_03_06.md \
     --charts-dir output/multi_asset_analysis_2026_03_06_charts
+```
+
+#### 4. 图表逆向分析
+
+```bash
+# 分类所有图片
+python scripts/analysis/analysis_charts.py --input processed/quant_juicer_weibo_latest.md --classify-only
+
+# 生成单张图表
+python scripts/analysis/chart_templates/options_oi.py --ticker GLD --expiry 2026-03-20
+python scripts/analysis/chart_templates/gamma_exposure.py --ticker KWEB
+python scripts/analysis/chart_templates/exponential_fit.py --ticker "^NDX" --period 20y
+```
+
+#### 5. 自动化流水线（OpenClaw cron 每工作日 9:00 触发）
+
+```bash
+python scripts/automation/auto_pipeline.py              # 全量运行
+python scripts/automation/auto_pipeline.py --alerts-only # 仅检查价格预警
 ```
 
 #### 环境变量配置
@@ -147,22 +166,44 @@ python scripts/build_multi_asset_report.py \
 - **HTTP**: requests
 - **认证**: google-auth
 
+### 技术栈补充
+
+- **微博数据**: crawl4weibo + Playwright（Cookie 自动管理）
+- **期权数据**: NASDAQ 免费 API（完整 OI，无需注册）
+- **图表逆向**: Gemini 3.1 Pro Vision 分类 + 5 套参数化模板
+- **自动化**: OpenClaw cron 调度 + 飞书通知
+
 ### 目录结构
 
 ```
 quant_investment_juicer/
   scripts/
-    docx_to_md.py               # DOCX 转 Markdown（含图片导出）
-    build_multi_asset_report.py  # 主 pipeline
+    ingestion/
+      ingest_weibo.py              # 微博增量抓取（图文 + 评论）
+      ingest_docx_to_md.py         # 飞书 DOCX 转 Markdown
+    report/
+      report_multi_asset.py        # 多资产分析报告生成
+    analysis/
+      analysis_charts.py           # 图表分类 + 逆向分析
+      chart_templates/
+        candlestick_avwap.py       # K线 + 均线 + AVWAP
+        options_oi.py              # 期权 OI 分布（NASDAQ 数据源）
+        gamma_exposure.py          # Gamma Exposure Profile
+        exponential_fit.py         # 指数拟合 + sigma 通道
+        bollinger_macd.py          # 布林带 + MACD
+        data_sources.py            # 共享数据源（NASDAQ API）
+    automation/
+      auto_pipeline.py             # 自动化流水线（微博 + 行情 + 图表 + 预警）
   processed/
-    quant_juicer_weibo.docx      # 源文档（飞书导出）
-    quant_juicer_weibo.md        # 转换后的 Markdown
-    quant_juicer_weibo_assets/   # 提取的源图片
+    quant_juicer_weibo.md          # 飞书历史数据（Markdown）
+    quant_juicer_weibo_assets/     # 飞书历史图片
+    quant_juicer_weibo_latest.md   # 微博增量抓取数据
+    quant_juicer_weibo_latest_assets/  # 微博增量图片
   output/
-    multi_asset_analysis_YYYY_MM_DD.md       # 生成的分析报告
-    multi_asset_analysis_YYYY_MM_DD_charts/  # 技术图表（PNG）
-    multi_asset_analysis_YYYY_MM_DD_images/  # 源内容图片副本
-    price_cache/                             # 行情数据缓存（CSV）
+    multi_asset_analysis_YYYY_MM_DD.md       # 分析报告
+    multi_asset_analysis_YYYY_MM_DD_charts/  # 报告技术图表
+    pipeline/                                # 每日自动化产出（MD + PNG）
+    chart_analysis/                          # 图表逆向产出
 ```
 
 ---
@@ -191,30 +232,22 @@ Core functionality worked early on; subsequent iterations focused on report form
 ### Pipeline Overview
 
 ```
-Feishu/Lark DOCX export
-      |
-      v
- docx_to_md.py          # DOCX -> Markdown + image extraction
-      |
-      v
- Markdown source file
-      |
-      v
- build_multi_asset_report.py
-      |
-      +---> Text parsing & instrument classification
-      |         |
-      |         v
-      +---> LLM extraction of key views / price levels (Gemini 3.1 Pro, Vertex AI)
-      |         |
-      |         v
-      +---> Fetch historical market data (Eastmoney API)
-      |         |
-      |         v
-      +---> Generate technical charts (price + support/resistance/option wall annotations)
-      |         |
-      |         v
-      +---> Output structured Markdown report
+ Ingestion                  Analysis                   Automation
+ ─────────                  ─────────                  ─────────
+ ingest_weibo.py            analysis_charts.py         auto_pipeline.py
+   Weibo API crawl            Image classification       OpenClaw cron trigger
+   Incremental (--since)      (tech chart/screenshot)    ↓
+   Replies as Q&A             ↓                        1. Fetch Weibo posts
+   LLM topic extraction       Reverse-engineer code    2. Fetch latest prices
+   ↓                          ↓                        3. Run chart templates
+ Markdown source             chart_templates/           4. Price alerts
+   ↓                           A. Candlestick+MA+AVWAP  5. Output MD report
+ report_multi_asset.py         B. Options OI (NASDAQ)   6. Feishu notification
+   Text parsing & classify     C. Exponential fit+σ
+   LLM extract views/levels    D. Gamma Exposure
+   Market data (Eastmoney)     E. Bollinger+MACD
+   Technical charts
+   Structured report
 ```
 
 ### Sample Output
@@ -261,21 +294,41 @@ Consumer Index 000932 with stop-loss, watch level, and resistance annotations:
 
 ### Usage
 
-#### 1. Convert DOCX to Markdown
+#### 1. Weibo Incremental Fetch
 
 ```bash
-python scripts/docx_to_md.py processed/quant_juicer_weibo.docx \
-    -o processed/quant_juicer_weibo.md \
-    --image-dir processed/quant_juicer_weibo_assets
+python scripts/ingestion/ingest_weibo.py --cookie "SUB=xxx; SUBP=yyy" --since 2026-03-06
 ```
 
-#### 2. Generate Multi-Asset Analysis Report
+#### 2. Feishu DOCX Import (historical data)
 
 ```bash
-python scripts/build_multi_asset_report.py \
+python scripts/ingestion/ingest_docx_to_md.py processed/quant_juicer_weibo.docx \
+    -o processed/quant_juicer_weibo.md --image-dir processed/quant_juicer_weibo_assets
+```
+
+#### 3. Generate Multi-Asset Analysis Report
+
+```bash
+python scripts/report/report_multi_asset.py \
     --input processed/quant_juicer_weibo.md \
     --output output/multi_asset_analysis_2026_03_06.md \
     --charts-dir output/multi_asset_analysis_2026_03_06_charts
+```
+
+#### 4. Chart Reverse Engineering
+
+```bash
+python scripts/analysis/analysis_charts.py --input processed/quant_juicer_weibo_latest.md --classify-only
+python scripts/analysis/chart_templates/options_oi.py --ticker GLD --expiry 2026-03-20
+python scripts/analysis/chart_templates/gamma_exposure.py --ticker KWEB
+```
+
+#### 5. Automated Pipeline (OpenClaw cron, weekdays 9:00 AM)
+
+```bash
+python scripts/automation/auto_pipeline.py
+python scripts/automation/auto_pipeline.py --alerts-only
 ```
 
 #### Environment Variables
@@ -310,21 +363,40 @@ Each run produces `multi_asset_analysis_YYYY_MM_DD.md`, containing:
 - **HTTP**: requests
 - **Auth**: google-auth
 
+### Additional Tech Stack
+
+- **Weibo data**: crawl4weibo + Playwright (auto cookie management)
+- **Options data**: NASDAQ free API (complete OI, no registration)
+- **Chart reverse engineering**: Gemini 3.1 Pro Vision classification + 5 parameterized templates
+- **Automation**: OpenClaw cron scheduling + Feishu notifications
+
 ### Directory Structure
 
 ```
 quant_investment_juicer/
   scripts/
-    docx_to_md.py               # DOCX to Markdown (with image export)
-    build_multi_asset_report.py  # Main pipeline
+    ingestion/
+      ingest_weibo.py              # Weibo incremental crawl (text + images + Q&A)
+      ingest_docx_to_md.py         # Feishu DOCX to Markdown
+    report/
+      report_multi_asset.py        # Multi-asset analysis report generation
+    analysis/
+      analysis_charts.py           # Chart classification + reverse engineering
+      chart_templates/
+        candlestick_avwap.py       # Candlestick + MA + AVWAP
+        options_oi.py              # Options OI distribution (NASDAQ data)
+        gamma_exposure.py          # Gamma Exposure Profile
+        exponential_fit.py         # Exponential fit + sigma bands
+        bollinger_macd.py          # Bollinger Bands + MACD
+        data_sources.py            # Shared data sources (NASDAQ API)
+    automation/
+      auto_pipeline.py             # Automated pipeline (Weibo + prices + charts + alerts)
   processed/
-    quant_juicer_weibo.docx      # Source document (Feishu export)
-    quant_juicer_weibo.md        # Converted Markdown
-    quant_juicer_weibo_assets/   # Extracted source images
+    quant_juicer_weibo.md          # Feishu historical data (Markdown)
+    quant_juicer_weibo_latest.md   # Weibo incremental data
   output/
-    multi_asset_analysis_YYYY_MM_DD.md       # Generated analysis report
-    multi_asset_analysis_YYYY_MM_DD_charts/  # Technical charts (PNG)
-    multi_asset_analysis_YYYY_MM_DD_images/  # Source content image copies
-    price_cache/                             # Market data cache (CSV)
+    multi_asset_analysis_YYYY_MM_DD.md       # Analysis report
+    pipeline/                                # Daily automated output (MD + PNG)
+    chart_analysis/                          # Chart reverse engineering output
 ```
 
