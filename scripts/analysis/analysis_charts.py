@@ -29,7 +29,7 @@ from google.oauth2 import service_account
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SA_KEY_PATH = Path(os.getenv(
     "SA_KEY_PATH",
-    str(Path.home() / "Desktop/liaoandi-vertex-ai-key.json"),
+    str(Path.home() / ".config/secrets/liaoandi_vertex_ai_key.json"),
 ))
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
 VERTEX_LOCATION = "global"

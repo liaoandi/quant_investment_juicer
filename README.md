@@ -138,7 +138,7 @@ python scripts/automation/auto_pipeline.py --alerts-only # 仅检查价格预警
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `SA_KEY_PATH` | `~/Desktop/liaoandi-vertex-ai-key.json` | Vertex AI 服务账号密钥路径 |
+| `SA_KEY_PATH` | `~/.config/secrets/liaoandi_vertex_ai_key.json` | Vertex AI 服务账号密钥路径 |
 | `LLM_TIMEOUT_SEC` | 120 | LLM 请求超时，秒 |
 | `LLM_BATCH_SIZE` | 3 | LLM 批量请求大小 |
 | `LLM_THINKING_BUDGET` | 256 | LLM 思考 token 预算 |
@@ -335,7 +335,7 @@ python scripts/automation/auto_pipeline.py --alerts-only
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SA_KEY_PATH` | `~/Desktop/liaoandi-vertex-ai-key.json` | Vertex AI service account key path |
+| `SA_KEY_PATH` | `~/.config/secrets/liaoandi_vertex_ai_key.json` | Vertex AI service account key path |
 | `LLM_TIMEOUT_SEC` | 120 | LLM request timeout in seconds |
 | `LLM_BATCH_SIZE` | 3 | LLM batch request size |
 | `LLM_THINKING_BUDGET` | 256 | LLM thinking token budget |
