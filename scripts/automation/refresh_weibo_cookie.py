@@ -18,6 +18,8 @@ from pathlib import Path
 
 API_KEYS_FILE = Path.home() / ".config" / "api-keys.env"
 REQUIRED_COOKIES = ["SUB", "SUBP"]
+# SSOLoginState triggers 432 anti-crawler on m.weibo.cn (dataabc/weibo-crawler#578)
+BLACKLISTED_COOKIES = ["SSOLoginState"]
 
 
 def extract_weibo_cookies() -> dict[str, str]:
@@ -89,6 +91,13 @@ def main():
     if not validate_cookies(cookies):
         print("[error] Cookie validation failed — login may have expired in Chrome too.")
         sys.exit(1)
+
+    # Remove cookies known to trigger 432
+    removed = [k for k in BLACKLISTED_COOKIES if k in cookies]
+    for k in removed:
+        del cookies[k]
+    if removed:
+        print(f"[info] Removed blacklisted cookies: {', '.join(removed)}")
 
     cookie_str = cookies_to_string(cookies)
     print(f"[ok] Cookie valid (SUB + SUBP present)")
