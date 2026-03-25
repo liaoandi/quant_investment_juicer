@@ -20,7 +20,7 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from data_sources import fetch_nasdaq_options
+from data_sources import fetch_options
 
 
 def fetch_data(ticker: str, expiry: str) -> tuple:
@@ -33,7 +33,7 @@ def fetch_data(ticker: str, expiry: str) -> tuple:
         expiry = get_nearest_expiry_with_oi(ticker)
         print(f"Using expiry: {expiry}")
 
-    df = fetch_nasdaq_options(ticker, expiry)
+    df = fetch_options(ticker, expiry)
     print(f"NASDAQ data: {len(df)} strikes, Call OI: {df['c_oi'].sum():,}, Put OI: {df['p_oi'].sum():,}")
     return df, current_price, expiry
 

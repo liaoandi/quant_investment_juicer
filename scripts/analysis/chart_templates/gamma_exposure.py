@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from scipy.stats import norm
-from data_sources import fetch_nasdaq_options
+from data_sources import fetch_options
 
 
 # Default IV assumption when NASDAQ doesn't provide it
@@ -52,7 +52,7 @@ def compute_gex(ticker: str, expiry: str, r: float = 0.05):
         print(f"Using expiry: {expiry}")
 
     # Fetch from NASDAQ
-    df = fetch_nasdaq_options(ticker, expiry)
+    df = fetch_options(ticker, expiry)
     print(f"NASDAQ data: {len(df)} strikes, Call OI: {df['c_oi'].sum():,}, Put OI: {df['p_oi'].sum():,}")
 
     # Time to expiry

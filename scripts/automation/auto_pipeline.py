@@ -68,18 +68,23 @@ def run_cmd(cmd: list[str], timeout: int = 120) -> dict:
 # Step 1: Fetch Weibo
 # ---------------------------------------------------------------------------
 def step_fetch_weibo() -> dict:
-    """Fetch new posts from Weibo (incremental)."""
-    cookie = os.environ.get("WEIBO_COOKIE", "")
-    if not cookie:
-        return {"skipped": True, "reason": "WEIBO_COOKIE not set"}
+    """Fetch new posts from Weibo (incremental).
 
+    Cookie priority: WEIBO_COOKIE env var > crawl4weibo persistent storage.
+    If neither works, skip with a message.
+    """
     cmd = [
         VENV_PYTHON, str(INGESTION_DIR / "ingest_weibo.py"),
-        "--cookie", cookie,
         "--since", _get_last_weibo_date(),
         "--pages", "3",
         "--append",
     ]
+
+    # Use env cookie if available, otherwise let crawl4weibo auto-refresh
+    cookie = os.environ.get("WEIBO_COOKIE", "")
+    if cookie:
+        cmd.extend(["--cookie", cookie])
+
     result = run_cmd(cmd, timeout=180)
 
     # Extract summary from stdout
