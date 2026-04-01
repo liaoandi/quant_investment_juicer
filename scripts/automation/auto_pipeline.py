@@ -68,24 +68,16 @@ def run_cmd(cmd: list[str], timeout: int = 120) -> dict:
 # Step 1: Fetch Weibo
 # ---------------------------------------------------------------------------
 def step_fetch_weibo() -> dict:
-    """Fetch new posts from Weibo (incremental).
+    """Fetch new posts from Weibo via persistent Playwright profile (page-level scraping).
 
-    Cookie priority: WEIBO_COOKIE env var > crawl4weibo persistent storage.
-    If neither works, skip with a message.
+    Requires one-time setup: python scripts/automation/setup_weibo_profile.py
     """
     cmd = [
-        VENV_PYTHON, str(INGESTION_DIR / "ingest_weibo.py"),
-        "--since", _get_last_weibo_date(),
-        "--pages", "3",
+        VENV_PYTHON, str(INGESTION_DIR / "ingest_weibo_page.py"),
         "--append",
     ]
 
-    # Use env cookie if available, otherwise let crawl4weibo auto-refresh
-    cookie = os.environ.get("WEIBO_COOKIE", "")
-    if cookie:
-        cmd.extend(["--cookie", cookie])
-
-    result = run_cmd(cmd, timeout=180)
+    result = run_cmd(cmd, timeout=300)
 
     # Extract summary from stdout
     new_posts = 0
