@@ -1623,8 +1623,8 @@ def summarize_instrument_with_llm(
     latest_date = rows[0]["date"] if rows else "-"
     configured_nearest = format_configured_nearest_level(inst or {}, current_price)
     fallback = {
-        "action": "见正文",
-        "core_summary": "见正文",
+        "action": "-",
+        "core_summary": "-",
         "nearest_level": configured_nearest,
         "analysis_date": latest_date,
     }
@@ -1641,45 +1641,20 @@ def summarize_instrument_with_llm(
         return fallback
     combined = "\n\n".join(parts)[:20000]
 
-    price_info = f"当前价格：{current_price:.4f}" if current_price is not None else "当前价格：未知"
+    price_info = f"当前价格：{current_price:.4f}" if current_price is not None else ""
     today = dt.date.today().isoformat()
 
-    # Build configured key levels context with breach warnings
-    levels_info = ""
-    if inst and inst.get("levels") and current_price is not None:
-        level_lines = []
-        for lv in inst["levels"]:
-            val = lv["value"]
-            kind = lv["kind"]
-            label = lv["label"]
-            deviation = (current_price - val) / val * 100
-            breach = ""
-            if kind == "stop" and current_price < val:
-                breach = " ⚠️ 当前价格已低于此止损/失效位"
-            elif kind == "support" and current_price < val:
-                breach = " ⚠️ 当前价格已跌破此支撑位"
-            level_lines.append(f"  - {label} {val} ({kind}){breach}")
-        if level_lines:
-            levels_info = "配置的关键位（供参考）：\n" + "\n".join(level_lines) + "\n\n"
-
     prompt = (
-        f"你是量化投资分析助手。以下是关于「{display_name}」的多篇原文分析，按日期排列。\n\n"
-        f"今天日期：{today}\n"
-        f"{price_info}\n"
-        f"{levels_info}"
-        "请基于原文内容，输出一个 JSON 对象（不要输出其他文字）：\n\n"
+        f"你是投资分析助手。以下是关于「{display_name}」的原文分析，按日期排列（最新在前）。\n\n"
+        f"今天日期：{today}。{price_info}\n\n"
+        "请输出一个 JSON 对象（不要输出其他文字）：\n\n"
         "{\n"
-        '  "core_summary": "用一句话概括作者对该品种的核心判断/观点（20-40字，侧重分析结论）",\n'
-        '  "action": "结合原文作者最新观点和当前价格，给出一句话操作建议（30-60字，侧重具体操作）",\n'
-        '  "nearest_level": "原文提到的与当前价格最相关的支撑位或阻力位（如：支撑 440 / 阻力 475）",\n'
-        '  "analysis_date": "原文中最近一次分析该品种的日期（YYYY-MM-DD格式）"\n'
+        '  "core_summary": "用一句话概括作者最新核心判断（20-40字，直接引用或紧贴原文措辞）",\n'
+        '  "action": "用一句话提炼作者最新操作建议（20-50字，只写原文明确说的，没有明确建议则写\'-\'）",\n'
+        '  "nearest_level": "原文提到的最相关关键位（如：支撑 440 / 阻力 475，没有则写\'-\'）",\n'
+        '  "analysis_date": "原文最近分析日期（YYYY-MM-DD）"\n'
         "}\n\n"
-        "要求：\n"
-        "1) action 必须基于原文作者的实际观点，不要编造\n"
-        "2) 如果原文有多次分析，以最新一次的观点为主，但要考虑观点演进\n"
-        "3) 如果当前价格已低于止损/失效位或跌破支撑位，action必须体现风控信号（如暂停加仓、等待新平衡）\n"
-        "4) nearest_level 用原文提到的具体数值，格式如「支撑 440 / 阻力 475」\n"
-        "5) 如果原文没提到具体点位，nearest_level 输出 \"-\"\n\n"
+        "重要：只提炼原文作者自己的话，不要推断、不要补充、不要加任何你自己的判断。\n\n"
         f"原文：\n{combined}"
     )
 
