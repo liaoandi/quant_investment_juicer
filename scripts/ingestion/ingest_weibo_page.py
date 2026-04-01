@@ -208,9 +208,12 @@ async def scrape(args) -> list[dict]:
         await page.goto(target_url, wait_until="domcontentloaded", timeout=45000)
         await page.wait_for_timeout(3000)
 
-        # Check for login wall
+        def is_login_wall(html: str) -> bool:
+            return "登录注册后查看更多微博" in html or "立即查看" in html
+
+        # Check for login wall on initial load
         content = await page.content()
-        if "登录注册后查看更多微博" in content and "立即查看" in content:
+        if is_login_wall(content):
             await ctx.close()
             raise SystemExit(
                 "[error] 检测到登录墙，profile 可能已过期。\n"
@@ -221,6 +224,15 @@ async def scrape(args) -> list[dict]:
         stale_rounds = 0
 
         for idx in range(args.scrolls + 1):
+            # Re-check login wall mid-scroll
+            mid_content = await page.content()
+            if is_login_wall(mid_content):
+                await ctx.close()
+                raise SystemExit(
+                    "[error] 检测到登录墙（滚动中途），停止抓取。\n"
+                    "请重新运行: python scripts/automation/setup_weibo_profile.py"
+                )
+
             extracted = await page.evaluate(EXTRACT_POSTS_JS)
             before = len(posts_by_key)
             stop = False
@@ -274,8 +286,8 @@ async def main() -> None:
     parser.add_argument("--append", action="store_true", help="增量追加到现有文件")
     parser.add_argument("--scrolls", type=int, default=4)
     parser.add_argument("--max-posts", type=int, default=20)
-    parser.add_argument("--delay-min", type=int, default=4)
-    parser.add_argument("--delay-max", type=int, default=8)
+    parser.add_argument("--delay-min", type=int, default=8)
+    parser.add_argument("--delay-max", type=int, default=15)
     args = parser.parse_args()
 
     # Auto-fill --since from state file if not provided

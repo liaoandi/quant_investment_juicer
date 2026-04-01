@@ -56,7 +56,7 @@ def run_cmd(cmd: list[str], timeout: int = 120) -> dict:
         return {
             "success": result.returncode == 0,
             "stdout": result.stdout.strip(),
-            "stderr": result.stderr.strip()[-500:] if result.stderr else "",
+            "stderr": result.stderr.strip() if result.stderr else "",
         }
     except subprocess.TimeoutExpired:
         return {"success": False, "stdout": "", "stderr": f"Timeout ({timeout}s)"}
@@ -79,7 +79,8 @@ def step_fetch_weibo() -> dict:
 
     result = run_cmd(cmd, timeout=300)
 
-    login_expired = "检测到登录墙" in result["stderr"] or "检测到登录墙" in result["stdout"]
+    combined = result["stdout"] + result["stderr"]
+    login_expired = "检测到登录墙" in combined
     new_posts = 0
     for line in result["stdout"].split("\n"):
         if "Posts fetched:" in line:
@@ -88,18 +89,6 @@ def step_fetch_weibo() -> dict:
             except ValueError:
                 pass
     return {"new_posts": new_posts, "login_expired": login_expired, **result}
-
-
-def _get_last_weibo_date() -> str:
-    """Get the date of the last Weibo fetch."""
-    state_file = BASE_DIR / "processed" / ".weibo_fetch_state.json"
-    if state_file.exists():
-        try:
-            state = json.loads(state_file.read_text())
-            return state.get("last_date", "2026-03-06")
-        except Exception:
-            pass
-    return "2026-03-06"
 
 
 # ---------------------------------------------------------------------------
@@ -305,6 +294,9 @@ def main():
         weibo_result = step_fetch_weibo()
         if weibo_result.get("login_expired"):
             print("[ALERT] Weibo login expired — please re-run setup_weibo_profile.py")
+            sys.exit(1)
+        if not weibo_result.get("success"):
+            print(f"[ALERT] Weibo fetch failed — {weibo_result.get('stderr', '')[:200]}")
             sys.exit(1)
         print(f"  New posts: {weibo_result.get('new_posts', 0)}\n")
 

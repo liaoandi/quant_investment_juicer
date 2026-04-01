@@ -70,7 +70,8 @@ def login_mode():
         print("[ok] 登录态有效，profile 已保存")
         print("[next] 运行 --verify 确认无界面模式也有效")
     else:
-        print("[warn] m.weibo.cn 仍有登录墙，profile 已保存，先跑 --verify 再判断")
+        print("[error] m.weibo.cn 仍有登录墙，登录可能未完成，请重新运行此脚本")
+        sys.exit(1)
 
 
 def verify_mode():
