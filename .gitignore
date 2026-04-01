@@ -10,3 +10,7 @@ price_cache/
 .archive/
 output/pipeline/
 output/chart_analysis/
+processed/*.md
+processed/*.json
+reviews/
+_archive/
