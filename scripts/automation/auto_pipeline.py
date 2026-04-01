@@ -79,12 +79,15 @@ def step_fetch_weibo() -> dict:
 
     result = run_cmd(cmd, timeout=300)
 
-    # Extract summary from stdout
+    login_expired = "检测到登录墙" in result["stderr"] or "检测到登录墙" in result["stdout"]
     new_posts = 0
     for line in result["stdout"].split("\n"):
         if "Posts fetched:" in line:
-            new_posts = int(line.split(":")[1].strip())
-    return {"new_posts": new_posts, **result}
+            try:
+                new_posts = int(line.split(":")[1].strip())
+            except ValueError:
+                pass
+    return {"new_posts": new_posts, "login_expired": login_expired, **result}
 
 
 def _get_last_weibo_date() -> str:
@@ -300,6 +303,9 @@ def main():
     if not args.skip_weibo and not args.alerts_only:
         print("[Step 1] Fetching Weibo posts...")
         weibo_result = step_fetch_weibo()
+        if weibo_result.get("login_expired"):
+            print("[ALERT] Weibo login expired — please re-run setup_weibo_profile.py")
+            sys.exit(1)
         print(f"  New posts: {weibo_result.get('new_posts', 0)}\n")
 
     # Step 2: Price alerts
