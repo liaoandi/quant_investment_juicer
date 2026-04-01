@@ -1644,10 +1644,29 @@ def summarize_instrument_with_llm(
     price_info = f"当前价格：{current_price:.4f}" if current_price is not None else "当前价格：未知"
     today = dt.date.today().isoformat()
 
+    # Build configured key levels context with breach warnings
+    levels_info = ""
+    if inst and inst.get("levels") and current_price is not None:
+        level_lines = []
+        for lv in inst["levels"]:
+            val = lv["value"]
+            kind = lv["kind"]
+            label = lv["label"]
+            deviation = (current_price - val) / val * 100
+            breach = ""
+            if kind == "stop" and current_price < val:
+                breach = " ⚠️ 当前价格已低于此止损/失效位"
+            elif kind == "support" and current_price < val:
+                breach = " ⚠️ 当前价格已跌破此支撑位"
+            level_lines.append(f"  - {label} {val} ({kind}){breach}")
+        if level_lines:
+            levels_info = "配置的关键位（供参考）：\n" + "\n".join(level_lines) + "\n\n"
+
     prompt = (
         f"你是量化投资分析助手。以下是关于「{display_name}」的多篇原文分析，按日期排列。\n\n"
         f"今天日期：{today}\n"
-        f"{price_info}\n\n"
+        f"{price_info}\n"
+        f"{levels_info}"
         "请基于原文内容，输出一个 JSON 对象（不要输出其他文字）：\n\n"
         "{\n"
         '  "core_summary": "用一句话概括作者对该品种的核心判断/观点（20-40字，侧重分析结论）",\n'
@@ -1658,8 +1677,9 @@ def summarize_instrument_with_llm(
         "要求：\n"
         "1) action 必须基于原文作者的实际观点，不要编造\n"
         "2) 如果原文有多次分析，以最新一次的观点为主，但要考虑观点演进\n"
-        "3) nearest_level 用原文提到的具体数值，格式如「支撑 440 / 阻力 475」\n"
-        "4) 如果原文没提到具体点位，nearest_level 输出 \"-\"\n\n"
+        "3) 如果当前价格已低于止损/失效位或跌破支撑位，action必须体现风控信号（如暂停加仓、等待新平衡）\n"
+        "4) nearest_level 用原文提到的具体数值，格式如「支撑 440 / 阻力 475」\n"
+        "5) 如果原文没提到具体点位，nearest_level 输出 \"-\"\n\n"
         f"原文：\n{combined}"
     )
 
@@ -2463,7 +2483,8 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
                 _dates = [r.get("date", "") for r in full_rows if r.get("date")]
                 _date_range = f"{_dates[-1]} ~ {_dates[0]}" if len(_dates) >= 2 else (_dates[0] if _dates else "")
                 detail_lines.append("<details>")
-                detail_lines.append(f'<summary>📂 原文记录（{_date_range}，共 {len(full_rows)} 篇）</summary>')
+                _date_part = f"{_date_range}，" if _date_range else ""
+                detail_lines.append(f'<summary>📂 原文记录（{_date_part}共 {len(full_rows)} 篇）</summary>')
                 detail_lines.append("")
                 if LLM_SECTION_REFINEMENT:
                     if inst["token"] not in refined_cache:
@@ -2682,7 +2703,8 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
             _uc_dates = [r.get("date", "") for r in rows if r.get("date")]
             _uc_date_range = f"{_uc_dates[-1]} ~ {_uc_dates[0]}" if len(_uc_dates) >= 2 else (_uc_dates[0] if _uc_dates else "")
             detail_lines.append("<details>")
-            detail_lines.append(f'<summary>📂 原文记录（{_uc_date_range}，共 {len(rows)} 篇）</summary>')
+            _uc_date_part = f"{_uc_date_range}，" if _uc_date_range else ""
+            detail_lines.append(f'<summary>📂 原文记录（{_uc_date_part}共 {len(rows)} 篇）</summary>')
             detail_lines.append("")
             for row in rows:
                 row_text = strip_images_and_table_scaffold(
