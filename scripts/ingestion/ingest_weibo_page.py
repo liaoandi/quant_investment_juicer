@@ -92,7 +92,8 @@ EXTRACT_POSTS_JS = r"""() => {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    results.push({ id, text, time_text: timeText, images: imageUrls(card) });
+    const truncated = text.endsWith('全文') && !!id;
+    results.push({ id, text, time_text: timeText, images: imageUrls(card), truncated });
   }
   return results;
 }"""
@@ -253,6 +254,7 @@ async def scrape(args) -> list[dict]:
                     "topic": infer_topic(item.get("text", "")),
                     "images": item.get("images", []),
                     "sort_time": dt.isoformat() if dt else "",
+                    "truncated": item.get("truncated", False),
                 }
             after = len(posts_by_key)
             print(f"[scan] round={idx+1}/{args.scrolls+1} total={after}")
@@ -270,6 +272,40 @@ async def scrape(args) -> list[dict]:
             delay = random.randint(args.delay_min * 1000, args.delay_max * 1000)
             await page.mouse.wheel(0, random.randint(900, 1200))
             await page.wait_for_timeout(delay)
+
+        # Expand truncated posts via statuses/show API (uses browser cookies automatically)
+        truncated = [p for p in posts_by_key.values() if p.get("truncated") and p.get("id")]
+        if truncated:
+            print(f"[expand] {len(truncated)} 条帖子需要展开全文...")
+        for post in truncated:
+            await page.wait_for_timeout(random.randint(args.delay_min * 1000, args.delay_max * 1000))
+            result = await page.evaluate("""async (id) => {
+                try {
+                    const resp = await fetch(
+                        `https://m.weibo.cn/statuses/show?id=${id}`,
+                        {headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}}
+                    );
+                    const data = await resp.json();
+                    if (data.ok === 1 && data.data && data.data.text) {
+                        return {ok: true, text: data.data.text};
+                    }
+                    return {ok: false, error: String(data.ok)};
+                } catch(e) {
+                    return {ok: false, error: e.message};
+                }
+            }""", post["id"])
+            if result.get("ok"):
+                # Strip HTML tags from API response
+                raw = result["text"]
+                raw = re.sub(r"<br\s*/?>", "\n", raw)
+                raw = re.sub(r"<[^>]+>", "", raw)
+                raw = raw.replace("&nbsp;", " ").replace("&amp;", "&")
+                raw = raw.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+                posts_by_key[post["id"]]["text"] = raw.strip()
+                posts_by_key[post["id"]]["truncated"] = False
+                print(f"[expand] {post['id']} ok ({len(raw)} chars)")
+            else:
+                print(f"[expand] {post['id']} failed: {result.get('error', '?')}")
 
         await ctx.close()
 

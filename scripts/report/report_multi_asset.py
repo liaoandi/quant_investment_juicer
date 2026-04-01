@@ -245,6 +245,19 @@ INSTRUMENTS = [
         "level_basis": "ETF",
         "levels": [],
     },
+    {
+        "id": "ndx",
+        "name": "纳指100（NDX）",
+        "token": "纳指",
+        "symbol": "^NDX",
+        "price_basis": "INDEX",
+        "level_basis": "INDEX",
+        "levels": [
+            {"label": "铁低估点（2025-04关税战底）", "value": 17000, "kind": "support", "source": "2026-03-30"},
+            {"label": "一年估值下限", "value": 20570, "kind": "watch", "source": "2026-03-30"},
+            {"label": "一年估值上限", "value": 22482, "kind": "resistance", "source": "2026-03-30"},
+        ],
+    },
 ]
 
 SUMMARY_CATEGORY_ORDER = ["美元与美债", "美股", "港股", "A股", "大宗商品", "其他"]
