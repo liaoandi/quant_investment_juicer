@@ -2647,7 +2647,7 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
         uc_date = uc_summary["analysis_date"]
         core_summary = uc_summary["core_summary"]
 
-        if uc_action != "见正文":
+        if uc_action not in ("-", "见正文"):
             _nearest_disp = uc_nearest if len(uc_nearest) <= 40 else uc_nearest[:38] + "…"
             _action_disp = uc_action if len(uc_action) <= 40 else uc_action[:38] + "…"
             summary_rows.append(
@@ -2669,7 +2669,7 @@ def build_report(md_text: str, input_md: Path, out_md: Path, charts_dir: Path) -
             # --- Major uncovered: generate detail section ---
             detail_lines.append(f"### {display_name}")
             detail_lines.append("")
-            if uc_action != "见正文":
+            if uc_action not in ("-", "见正文"):
                 detail_lines.append(f"> **对应操作：{uc_action}**")
                 detail_lines.append("")
             if uc_nearest != "-":

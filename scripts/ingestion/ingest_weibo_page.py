@@ -133,6 +133,8 @@ def parse_time_text(raw: str, now: datetime) -> tuple[datetime | None, str]:
     if m:
         try:
             dt = datetime(now.year, int(m.group(1)), int(m.group(2)))
+            if dt > now:  # e.g. 12-31 parsed in January → subtract a year
+                dt = dt.replace(year=now.year - 1)
             return dt, dt.strftime("%Y-%m-%d")
         except ValueError:
             pass
@@ -261,9 +263,14 @@ def update_full(posts: list[dict], uid: str) -> int:
     """Prepend new posts to archive, skip already-archived IDs. Returns count added."""
     archive_ids = load_full_ids()
     new_posts = [p for p in posts if p.get("id") and p["id"] not in archive_ids]
-    # Also include posts without ID that aren't already in archive by text match
-    no_id = [p for p in posts if not p.get("id")]
-    new_posts += no_id
+    # For posts without ID, dedup by date+text signature against existing archive
+    existing_text = FULL_FILE.read_text() if FULL_FILE.exists() else ""
+    for p in posts:
+        if p.get("id"):
+            continue
+        sig = (p.get("date", "") + p.get("text", "")[:60]).strip()
+        if sig and sig not in existing_text:
+            new_posts.append(p)
 
     if not new_posts:
         print("[full] 无新帖子需要加入 archive")

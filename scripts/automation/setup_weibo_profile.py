@@ -14,6 +14,12 @@ from pathlib import Path
 PROFILE_DIR = Path.home() / ".weibo_playwright_profile"
 MOBILE_URL = "https://m.weibo.cn/u/6937480224"
 CARD_SELECTOR = "article, .card, [class*='card'], [class*='weibo-text'], .m-main-inner"
+
+
+def is_login_wall(content: str) -> bool:
+    return "登录注册后查看更多微博" in content or "立即查看" in content
+
+
 LAUNCH_ARGS = [
     "--disable-blink-features=AutomationControlled",
     "--no-sandbox",
@@ -54,7 +60,7 @@ def login_mode():
         page.wait_for_load_state("networkidle", timeout=15000)
 
         content = page.content()
-        login_wall = "登录注册后查看更多微博" in content
+        login_wall = is_login_wall(content)
 
         if login_wall:
             print("[warn] m.weibo.cn 还有登录墙，session 可能还没同步，稍等...")
@@ -62,7 +68,7 @@ def login_mode():
             page.reload()
             page.wait_for_load_state("networkidle", timeout=10000)
             content = page.content()
-            login_wall = "登录注册后查看更多微博" in content
+            login_wall = is_login_wall(content)
 
         ctx.close()
 
@@ -96,7 +102,7 @@ def verify_mode():
         page.wait_for_load_state("networkidle", timeout=15000)
 
         content = page.content()
-        login_wall = "登录注册后查看更多微博" in content or "立即查看" in content
+        login_wall = is_login_wall(content)
 
         try:
             page.wait_for_selector(CARD_SELECTOR, timeout=8000)
