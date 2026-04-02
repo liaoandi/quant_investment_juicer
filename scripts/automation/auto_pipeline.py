@@ -74,7 +74,6 @@ def step_fetch_weibo() -> dict:
     """
     cmd = [
         VENV_PYTHON, str(INGESTION_DIR / "ingest_weibo_page.py"),
-        "--append",
     ]
 
     result = run_cmd(cmd, timeout=300)
@@ -320,13 +319,10 @@ def main():
     chart_findings = charts_result.get("findings", []) if charts_result else []
     summary_md = build_summary_md(weibo_result, alerts, charts_result, chart_findings)
 
-    # Save MD report (dated + latest symlink)
+    # Save MD report (date-stamped, no overwriting latest)
     today = datetime.now().strftime("%Y-%m-%d")
     md_path = OUTPUT_DIR / f"daily_report_{today}.md"
     md_path.write_text(summary_md)
-
-    latest_path = OUTPUT_DIR / "latest_report.md"
-    latest_path.write_text(summary_md)
 
     print("\n" + "=" * 50)
     print(summary_md)

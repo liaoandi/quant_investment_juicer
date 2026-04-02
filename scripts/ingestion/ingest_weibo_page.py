@@ -7,8 +7,13 @@ Requires one-time setup:
 
 Usage:
     python scripts/ingestion/ingest_weibo_page.py
-    python scripts/ingestion/ingest_weibo_page.py --since 2026-03-18 --append
-    python scripts/ingestion/ingest_weibo_page.py --scrolls 6 --max-posts 20
+    python scripts/ingestion/ingest_weibo_page.py --since 2026-03-06
+    python scripts/ingestion/ingest_weibo_page.py --scrolls 6 --max-posts 30
+
+Output (per run):
+    processed/quant_juicer_weibo_YYYY_MM_DD.md   — this run's posts only
+    processed/quant_juicer_weibo_full.md          — full history (prepended)
+    processed/assets/YYYY_MM_DD/                  — downloaded images
 """
 
 from __future__ import annotations
@@ -18,15 +23,21 @@ import asyncio
 import json
 import random
 import re
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
+
+import requests
 
 from playwright.async_api import async_playwright
 
 DEFAULT_UID = "6937480224"
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROCESSED_DIR = BASE_DIR / "processed"
-DEFAULT_OUTPUT = PROCESSED_DIR / "quant_juicer_weibo_latest.md"
+ASSETS_DIR = PROCESSED_DIR / "assets"
+FULL_FILE = PROCESSED_DIR / "quant_juicer_weibo_full.md"
+FULL_IDS_FILE = PROCESSED_DIR / ".weibo_full_ids.json"
 DEFAULT_JSON_OUTPUT = PROCESSED_DIR / "quant_juicer_weibo_page_latest.json"
 STATE_FILE = PROCESSED_DIR / ".weibo_fetch_state.json"
 PROFILE_DIR = Path.home() / ".weibo_playwright_profile"
@@ -57,7 +68,6 @@ TOPIC_KEYWORDS = {
 EXTRACT_POSTS_JS = r"""() => {
   const results = [];
   const seen = new Set();
-  // card-wrap is the top-level container for each post
   const cards = Array.from(document.querySelectorAll('div.card-wrap'));
 
   function imageUrls(root) {
@@ -65,7 +75,6 @@ EXTRACT_POSTS_JS = r"""() => {
     for (const img of root.querySelectorAll('img')) {
       const src = img.currentSrc || img.src || '';
       if (!src) continue;
-      // Skip emojis, icons, avatars (crop.*), VIP badges, placeholders
       if (/face\.t\.sinajs|timeline_card_small|n\.sinaimg\.cn\/photo|upload\/2015|h5\.sinaimg|\/crop\.\d/.test(src)) continue;
       if (!/sinaimg\.cn/.test(src)) continue;
       urls.push(src.replace('/orj360/', '/large/').replace('/thumb150/', '/large/'));
@@ -79,11 +88,9 @@ EXTRACT_POSTS_JS = r"""() => {
     const text = (textEl.innerText || '').trim();
     if (!text || text.length < 8) continue;
 
-    // Time is in span.time inside the card header
     const timeEl = card.querySelector('span.time');
     const timeText = (timeEl?.innerText || '').trim();
 
-    // Post ID from the "全文" link href e.g. /status/5282856878476298
     const fullTextLink = card.querySelector('.weibo-text a[href*="/status/"]');
     const statusMatch = fullTextLink?.href?.match(/\/status\/(\d+)/);
     const id = statusMatch?.[1] || '';
@@ -98,6 +105,10 @@ EXTRACT_POSTS_JS = r"""() => {
   return results;
 }"""
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def infer_topic(text: str) -> str:
     for display_name, aliases in TOPIC_KEYWORDS.items():
@@ -174,14 +185,114 @@ def save_state(posts: list[dict]) -> None:
     }, ensure_ascii=False, indent=2))
 
 
-def render_markdown(posts: list[dict], uid: str) -> str:
-    lines = ["量化投资榨汁机", "", f"https://weibo.com/u/{uid}", ""]
+def render_markdown(posts: list[dict], uid: str, include_header: bool = True) -> str:
+    lines = []
+    if include_header:
+        lines += ["量化投资榨汁机", "", f"https://weibo.com/u/{uid}", ""]
     for post in posts:
         lines += [f"{post['date']} {post['topic']}", "", "原文", "", post["text"], ""]
         for img in post["images"]:
             lines += [f"![图表]({img})", ""]
     return "\n".join(lines).rstrip() + "\n"
 
+
+# ---------------------------------------------------------------------------
+# Image download
+# ---------------------------------------------------------------------------
+
+def download_images(posts: list[dict], run_date: str) -> list[dict]:
+    """Download sinaimg images locally; update post image paths to relative paths."""
+    date_assets = ASSETS_DIR / run_date
+    date_assets.mkdir(parents=True, exist_ok=True)
+
+    headers = {
+        "Referer": "https://weibo.com/",
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        ),
+    }
+
+    for post in posts:
+        local_images = []
+        for url in post.get("images", []):
+            parsed = urlparse(url)
+            fname = Path(parsed.path).name
+            if not fname or "." not in fname:
+                fname = f"img_{abs(hash(url)) % 1000000}.jpg"
+            local_path = date_assets / fname
+
+            if not local_path.exists():
+                try:
+                    r = requests.get(url, headers=headers, timeout=15)
+                    if r.status_code == 200:
+                        local_path.write_bytes(r.content)
+                        time.sleep(random.uniform(0.5, 1.5))
+                    else:
+                        print(f"[warn] Image {fname}: HTTP {r.status_code}, keeping URL")
+                        local_images.append(url)
+                        continue
+                except Exception as e:
+                    print(f"[warn] Image download failed {fname}: {e}, keeping URL")
+                    local_images.append(url)
+                    continue
+
+            local_images.append(str(local_path.resolve()))
+
+        post["images"] = local_images
+
+    return posts
+
+
+# ---------------------------------------------------------------------------
+# Archive
+# ---------------------------------------------------------------------------
+
+def load_full_ids() -> set[str]:
+    if FULL_IDS_FILE.exists():
+        try:
+            return set(json.loads(FULL_IDS_FILE.read_text()))
+        except Exception:
+            pass
+    return set()
+
+
+def update_full(posts: list[dict], uid: str) -> int:
+    """Prepend new posts to archive, skip already-archived IDs. Returns count added."""
+    archive_ids = load_full_ids()
+    new_posts = [p for p in posts if p.get("id") and p["id"] not in archive_ids]
+    # Also include posts without ID that aren't already in archive by text match
+    no_id = [p for p in posts if not p.get("id")]
+    new_posts += no_id
+
+    if not new_posts:
+        print("[full] 无新帖子需要加入 archive")
+        return 0
+
+    new_md = render_markdown(new_posts, uid, include_header=False)
+
+    if FULL_FILE.exists():
+        existing = FULL_FILE.read_text()
+        match = re.search(r"^\d{4}-\d{2}-\d{2}\s+", existing, re.M)
+        if match:
+            archive_md = existing[: match.start()] + new_md + "\n" + existing[match.start():]
+        else:
+            archive_md = existing.rstrip() + "\n\n" + new_md
+    else:
+        header = f"量化投资榨汁机\n\nhttps://weibo.com/u/{uid}\n\n"
+        archive_md = header + new_md
+
+    FULL_FILE.write_text(archive_md.rstrip() + "\n")
+
+    new_ids = archive_ids | {p["id"] for p in new_posts if p.get("id")}
+    FULL_IDS_FILE.write_text(json.dumps(sorted(new_ids), ensure_ascii=False))
+    print(f"[full] 已追加 {len(new_posts)} 条帖子到 archive")
+    return len(new_posts)
+
+
+# ---------------------------------------------------------------------------
+# Scraper
+# ---------------------------------------------------------------------------
 
 async def scrape(args) -> list[dict]:
     if not PROFILE_DIR.exists():
@@ -212,7 +323,6 @@ async def scrape(args) -> list[dict]:
         def is_login_wall(html: str) -> bool:
             return "登录注册后查看更多微博" in html or "立即查看" in html
 
-        # Check for login wall on initial load
         content = await page.content()
         if is_login_wall(content):
             await ctx.close()
@@ -225,7 +335,6 @@ async def scrape(args) -> list[dict]:
         stale_rounds = 0
 
         for idx in range(args.scrolls + 1):
-            # Re-check login wall mid-scroll
             mid_content = await page.content()
             if is_login_wall(mid_content):
                 await ctx.close()
@@ -242,12 +351,11 @@ async def scrape(args) -> list[dict]:
                 if since_dt and dt and dt.date() < since_dt.date():
                     stop = True
                     continue
-                key = item.get("id") or item.get("link") or item.get("text", "")[:80]
+                key = item.get("id") or item.get("text", "")[:80]
                 if not key or key in posts_by_key:
                     continue
                 posts_by_key[key] = {
                     "id": item.get("id", ""),
-                    "link": item.get("link", ""),
                     "text": item.get("text", "").strip(),
                     "time_text": item.get("time_text", ""),
                     "date": date_str,
@@ -273,7 +381,7 @@ async def scrape(args) -> list[dict]:
             await page.mouse.wheel(0, random.randint(900, 1200))
             await page.wait_for_timeout(delay)
 
-        # Expand truncated posts via statuses/show API (uses browser cookies automatically)
+        # Expand truncated posts
         truncated = [p for p in posts_by_key.values() if p.get("truncated") and p.get("id")]
         if truncated:
             print(f"[expand] {len(truncated)} 条帖子需要展开全文...")
@@ -295,7 +403,6 @@ async def scrape(args) -> list[dict]:
                 }
             }""", post["id"])
             if result.get("ok"):
-                # Strip HTML tags from API response
                 raw = result["text"]
                 raw = re.sub(r"<br\s*/?>", "\n", raw)
                 raw = re.sub(r"<[^>]+>", "", raw)
@@ -313,20 +420,26 @@ async def scrape(args) -> list[dict]:
     return posts[:args.max_posts]
 
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
 async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--uid", default=DEFAULT_UID)
-    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
-    parser.add_argument("--json-output", default=str(DEFAULT_JSON_OUTPUT))
     parser.add_argument("--since", default=None, help="只保留此日期之后的帖子 (YYYY-MM-DD)")
-    parser.add_argument("--append", action="store_true", help="增量追加到现有文件")
+    parser.add_argument("--run-date", default=None, help="手动指定运行日期 YYYY_MM_DD（默认今天）")
     parser.add_argument("--scrolls", type=int, default=4)
     parser.add_argument("--max-posts", type=int, default=20)
     parser.add_argument("--delay-min", type=int, default=8)
     parser.add_argument("--delay-max", type=int, default=15)
+    parser.add_argument("--no-images", action="store_true", help="跳过图片下载")
     args = parser.parse_args()
 
-    # Auto-fill --since from state file if not provided
+    run_date = args.run_date or datetime.now().strftime("%Y_%m_%d")
+    dated_output = PROCESSED_DIR / f"quant_juicer_weibo_{run_date}.md"
+
+    # Auto-fill --since from state file
     if not args.since:
         state = load_state()
         last_date = state.get("last_date", "")
@@ -334,27 +447,35 @@ async def main() -> None:
             args.since = last_date
             print(f"[info] 增量模式，从 {args.since} 开始")
 
-    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     posts = await scrape(args)
 
-    Path(args.json_output).write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+    if not posts:
+        print("[info] 无新帖子")
+        return
 
-    md = render_markdown(posts, args.uid)
-    output = Path(args.output)
-    if args.append and output.exists():
-        existing = output.read_text()
-        match = re.search(r"^\d{4}-\d{2}-\d{2}\s+", existing, re.M)
-        if match:
-            md = existing[: match.start()] + md.split("\n", 4)[-1] + existing[match.start():]
-        else:
-            md = existing.rstrip() + "\n" + md
-    output.write_text(md)
+    # Download images
+    if not args.no_images:
+        print(f"[images] 下载图片到 assets/{run_date}/...")
+        posts = download_images(posts, run_date)
+
+    # Save JSON
+    DEFAULT_JSON_OUTPUT.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+
+    # Save dated file (this run only)
+    dated_md = render_markdown(posts, args.uid)
+    dated_output.write_text(dated_md)
+    print(f"[output] 日期文件: {dated_output.name}")
+
+    # Update full corpus file
+    update_full(posts, args.uid)
 
     save_state(posts)
 
     print(f"\nPosts fetched: {len(posts)}")
-    print(f"Output: {args.output}")
+    print(f"Dated file:    {dated_output}")
+    print(f"Full corpus:   {FULL_FILE}")
 
 
 if __name__ == "__main__":
