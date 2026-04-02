@@ -320,7 +320,7 @@ def main():
     summary_md = build_summary_md(weibo_result, alerts, charts_result, chart_findings)
 
     # Save MD report (date-stamped, no overwriting latest)
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y_%m_%d")
     md_path = OUTPUT_DIR / f"daily_report_{today}.md"
     md_path.write_text(summary_md)
 
