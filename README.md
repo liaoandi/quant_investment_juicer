@@ -90,12 +90,17 @@
 
 ### 使用方法
 
-#### 1. 微博增量抓取
+#### 1. 微博抓取（Playwright 持久化 profile）
 
 ```bash
-python scripts/ingestion/ingest_weibo.py \
-    --cookie "SUB=xxx; SUBP=yyy" \
-    --since 2026-03-06 --pages 3
+# 首次使用：一次性登录，保存到 ~/.weibo_playwright_profile
+python scripts/automation/setup_weibo_profile.py
+
+# 每周自动抓取（由 OpenClaw cron 触发，也可手动）
+python scripts/ingestion/ingest_weibo_page.py
+
+# 手动指定起始日期
+python scripts/ingestion/ingest_weibo_page.py --since 2026-03-06
 ```
 
 #### 2. 飞书 DOCX 转 Markdown（历史数据导入）
@@ -168,7 +173,7 @@ python scripts/automation/auto_pipeline.py --alerts-only # 仅检查价格预警
 
 ### 技术栈补充
 
-- **微博数据**: crawl4weibo + Playwright（Cookie 自动管理）
+- **微博数据**: Playwright persistent_context（一次性登录，无需 Cookie 管理）
 - **期权数据**: NASDAQ 免费 API（完整 OI，无需注册）
 - **图表逆向**: Gemini 3.1 Pro Vision 分类 + 5 套参数化模板
 - **自动化**: OpenClaw cron 调度 + 飞书通知
@@ -179,7 +184,7 @@ python scripts/automation/auto_pipeline.py --alerts-only # 仅检查价格预警
 quant_investment_juicer/
   scripts/
     ingestion/
-      ingest_weibo.py              # 微博增量抓取（图文 + 评论）
+      ingest_weibo_page.py         # 微博页面级抓取（Playwright persistent profile）
       ingest_docx_to_md.py         # 飞书 DOCX 转 Markdown
     report/
       report_multi_asset.py        # 多资产分析报告生成
@@ -193,12 +198,14 @@ quant_investment_juicer/
         bollinger_macd.py          # 布林带 + MACD
         data_sources.py            # 共享数据源（NASDAQ API）
     automation/
+      setup_weibo_profile.py       # 一次性 Playwright 登录（首次使用）
       auto_pipeline.py             # 自动化流水线（微博 + 行情 + 图表 + 预警）
   processed/
-    quant_juicer_weibo.md          # 飞书历史数据（Markdown）
-    quant_juicer_weibo_assets/     # 飞书历史图片
-    quant_juicer_weibo_latest.md   # 微博增量抓取数据
-    quant_juicer_weibo_latest_assets/  # 微博增量图片
+    quant_juicer_weibo_till_2026_03_06.md  # 飞书历史数据（转自 DOCX）
+    quant_juicer_weibo_assets/             # 飞书历史图片
+    quant_juicer_weibo_YYYY_MM_DD.md       # 每周自动抓取（日期文件）
+    quant_juicer_weibo_full.md             # 全量累积（历史 + 近期）
+    assets/YYYY_MM_DD/                     # 每周下载的微博图片
   output/
     multi_asset_analysis_YYYY_MM_DD.md       # 分析报告
     multi_asset_analysis_YYYY_MM_DD_charts/  # 报告技术图表
