@@ -2,8 +2,9 @@
 # 定时 pipeline 入口：刷新 cookie + 加载环境变量 + 运行流水线
 # 由 launchd 调用，不经过 shell profile
 
-VENV_PYTHON=/Users/antonio/Desktop/quant_investment_juicer/.venv/bin/python3
-cd /Users/antonio/Desktop/quant_investment_juicer
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python3"
+cd "$PROJECT_ROOT" || exit 1
 
 # Step 0: 从 Chrome 提取最新微博 cookie 并更新 api-keys.env
 echo "=== Refreshing Weibo cookie from Chrome ==="

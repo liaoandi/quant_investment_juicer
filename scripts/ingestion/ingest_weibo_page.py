@@ -239,7 +239,7 @@ def download_images(posts: list[dict], run_date: str) -> list[dict]:
                     local_images.append(url)
                     continue
 
-            local_images.append(str(local_path.resolve()))
+            local_images.append(local_path.relative_to(PROCESSED_DIR).as_posix())
 
         post["images"] = local_images
 
