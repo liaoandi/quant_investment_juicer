@@ -1,0 +1,345 @@
+[
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the distribution of call open interest for GLD options expiring on 2026-03-06, with significant peaks at strike prices 485, 495, and 510.",
+    "file": "image5.png"
+  },
+  {
+    "asset": "?",
+    "chart_type": "?",
+    "data_needed": "?",
+    "one_line": "Gemini API error 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource e",
+    "file": "image7.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "gamma_exposure",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the total gamma exposure profile for GLD, indicating a positive gamma environment above the flip point of $387.76.",
+    "file": "image8.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart displays the open interest distribution for GLD call and put options expiring on 2026-02-20, highlighting significant strike prices.",
+    "file": "image9.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the call open interest distribution for GLD options expiring on 2026-02-13, with significant peaks at strike prices 465, 475, and 500.",
+    "file": "image10.png"
+  },
+  {
+    "asset": "DXY",
+    "chart_type": "support_resistance",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the US Dollar Index (DXY) trending downwards from early 2025, finding support around the 96.6 level multiple times before slightly breaking below it in early 2026.",
+    "file": "image11.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the call open interest distribution for GLD options expiring on 2026-02-13, with significant open interest at strike prices 465, 475, and 500.",
+    "file": "image12.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the call open interest distribution for GLD options expiring on 2026-02-20, with a significant concentration at the 475 strike.",
+    "file": "image13.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "gamma_exposure",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the total gamma exposure profile for GLD, indicating a flip point at $387.53 and a current price of $462.34.",
+    "file": "image14.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart displays the open interest distribution for GLD put and call options expiring on 2026-02-13, highlighting significant open interest at specific strike prices.",
+    "file": "image15.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart displays the open interest distribution for GLD put and call options expiring on 2026-02-20, highlighting significant open interest at specific strike prices.",
+    "file": "image16.png"
+  },
+  {
+    "asset": "DXJ",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of DXJ and other ETFs over time.",
+    "file": "image18.png"
+  },
+  {
+    "asset": "SH000932",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price of SH000932 against its anchored VWAP since 2026-01-07, with a general downward trend followed by a sharp recovery.",
+    "file": "image20.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price of SPDR Gold Shares (GLD) with 20-day and 50-day moving averages.",
+    "file": "image22.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "GLD daily price vs anchored VWAP since 2025-11-04",
+    "file": "image23.png"
+  },
+  {
+    "asset": "GLD",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the distribution of put open interest for GLD options expiring on 2026-02-20, with a significant concentration at the 400 strike price.",
+    "file": "image24.png"
+  },
+  {
+    "asset": "SH000932",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart displays the daily price action of SH000932 using candlesticks, overlaid with the daily close price and an anchored VWAP, alongside trading volume.",
+    "file": "image26.png"
+  },
+  {
+    "asset": "SH000932",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price and volume of SH000932, along with its anchored VWAP since 2025-12-10.",
+    "file": "image27.png"
+  },
+  {
+    "asset": "SH000932",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart displays the daily price and anchored VWAP for SH000932 since 2025-11-05.",
+    "file": "image28.png"
+  },
+  {
+    "asset": "SH000819",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price and anchored VWAP for SH000819 since 2026-01-20.",
+    "file": "image30.png"
+  },
+  {
+    "asset": "SZ399967",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "Candlestick chart of SZ399967 with a 20-day moving average.",
+    "file": "image31.png"
+  },
+  {
+    "asset": "SZ399967",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price and volume of SZ399967, along with its anchored VWAP, since December 24, 2025.",
+    "file": "image32.png"
+  },
+  {
+    "asset": "SH000819",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price and anchored VWAP for SH000819 since 2026-01-20.",
+    "file": "image34.png"
+  },
+  {
+    "asset": "512400",
+    "chart_type": "bollinger_bands",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart displays the daily ETF price for 512400 with Bollinger Bands and MACD analysis.",
+    "file": "image36.png"
+  },
+  {
+    "asset": "sh000819",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of various non-ferrous metal indices over time.",
+    "file": "image37.png"
+  },
+  {
+    "asset": "sh000819",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of sh000819 over the last three years.",
+    "file": "image38.png"
+  },
+  {
+    "asset": "sh000819",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of sh000819 over the past year.",
+    "file": "image39.png"
+  },
+  {
+    "asset": "512890",
+    "chart_type": "exponential_fit",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows an exponential curve fitting for the daily close price of 512890, with upper and lower 1σ and 2σ bands.",
+    "file": "image40.png"
+  },
+  {
+    "asset": "SH000905",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart displays the daily price and anchored VWAP for SH000905 since 2026-01-09.",
+    "file": "image42.png"
+  },
+  {
+    "asset": "SH000905",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price and anchored VWAP for SH000905 since 2026-01-09.",
+    "file": "image44.png"
+  },
+  {
+    "asset": "SH000905",
+    "chart_type": "support_resistance",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price of SH000905 with two horizontal lines indicating potential support or resistance levels at 7974.74 and 8858.33.",
+    "file": "image45.png"
+  },
+  {
+    "asset": "SH000905",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price of SH000905 against the anchored VWAP since 2026-01-09.",
+    "file": "image46.png"
+  },
+  {
+    "asset": "^NDX",
+    "chart_type": "exponential_fit",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows an exponential curve fit to the daily closing price of ^NDX, with 1 and 2 standard deviation bands.",
+    "file": "image48.png"
+  },
+  {
+    "asset": "^GSPC",
+    "chart_type": "exponential_fit",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows an exponential curve fit for the daily closing price of ^GSPC, along with 1 and 2 standard deviation bands.",
+    "file": "image49.png"
+  },
+  {
+    "asset": "gold",
+    "chart_type": "bollinger_bands",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily and weekly price trends of New York gold futures, with Bollinger Bands and MACD indicators.",
+    "file": "image50.png"
+  },
+  {
+    "asset": "Au99.99",
+    "chart_type": "bollinger_bands",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily and weekly price trends of Au99.99 gold spot, along with Bollinger Bands and MACD indicators.",
+    "file": "image52.png"
+  },
+  {
+    "asset": "DXY",
+    "chart_type": "candlestick",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the daily price action of the US Dollar Index (DXY) over a period of several months, with a recent upward trend highlighted by a blue line.",
+    "file": "image53.png"
+  },
+  {
+    "asset": "unknown",
+    "chart_type": "moving_averages",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows a long-term historical view of a financial metric, likely a valuation ratio like the Shiller PE, along with its 10-year, 20-year, and historical moving averages.",
+    "file": "image55.png"
+  },
+  {
+    "asset": "Wilshire 5000",
+    "chart_type": "other",
+    "data_needed": "market_cap, gdp",
+    "one_line": "The chart shows the Wilshire 5000 to GDP ratio, also known as the Buffett Indicator, over time.",
+    "file": "image56.png"
+  },
+  {
+    "asset": "110022",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of 110022 over time.",
+    "file": "image60.png"
+  },
+  {
+    "asset": "110022",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of 110022 over time.",
+    "file": "image61.png"
+  },
+  {
+    "asset": "Nikkei 225",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the historical price trend of the Nikkei 225 index, highlighting significant peaks and troughs, including a major high in 1989 and subsequent significant drops.",
+    "file": "image63.png"
+  },
+  {
+    "asset": "Au99.99",
+    "chart_type": "bollinger_bands",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart displays the price trend of Gold - Au99.99 with 20-day and 50-day moving averages, along with their respective upper and lower Bollinger Bands.",
+    "file": "image67.png"
+  },
+  {
+    "asset": "007818",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart visualizes a grid trading strategy for Fund 007818, showing buy and sell points based on price movements.",
+    "file": "image73.png"
+  },
+  {
+    "asset": "007818",
+    "chart_type": "price_trend",
+    "data_needed": "ohlcv_price",
+    "one_line": "The chart shows the price trend of Fund 007818 with buy and sell signals based on a grid trading strategy.",
+    "file": "image74.png"
+  },
+  {
+    "asset": "KWEB",
+    "chart_type": "put_call_wall",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the open interest distribution for KWEB options, highlighting a $31 Put Wall acting as support and a $32 Call Wall acting as resistance, creating a narrow price range.",
+    "file": "5277375105602712_01_007zuXwkgy1ib9n8nfaixj318a0l847x.jpg"
+  },
+  {
+    "asset": "^NDX",
+    "chart_type": "exponential_fit",
+    "data_needed": "ohlcv_price",
+    "one_line": "Exponential curve fitting for ^NDX with 1 and 2 standard deviation bands.",
+    "file": "5276812360033286_02_007zuXwkgy1ib7trcjblcj30o70fan1h.jpg"
+  },
+  {
+    "asset": "KWEB",
+    "chart_type": "gamma_exposure",
+    "data_needed": "options_chain",
+    "one_line": "The chart shows the total gamma exposure profile for KWEB, indicating a flip point at $31.71 where the exposure shifts from negative to positive.",
+    "file": "5275224212771435_02_007zuXwkgy1ib2s59c524j30ww0j0dhx.jpg"
+  },
+  {
+    "asset": "unknown",
+    "chart_type": "options_oi",
+    "data_needed": "options_chain",
+    "one_line": "The chart displays put open interest across different strike prices, with a vertical dashed line indicating the close price on 2026-03-10.",
+    "file": "5275224212771435_03_007zuXwkgy1ib2s5aotp5j31q00o8afo.jpg"
+  }
+]

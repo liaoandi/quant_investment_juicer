@@ -8,8 +8,6 @@ price_cache/
 .weibo_cookie_storage/
 .weibo_fetch_state.json
 .archive/
-output/pipeline/
-output/chart_analysis/
 processed/assets/
 processed/*.md
 processed/*.json
